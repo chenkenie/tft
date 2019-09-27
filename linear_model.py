@@ -41,7 +41,61 @@ def get_next_batch(x, y, start, end):
     y_batch = y[start:end]    
     return x_batch, y_batch
 
+def Dense(x, x_dim, y_dim, name, reuse=None):
 
+    with tf.variable_scope(name, reuse=reuse):
+        w = tf.get_variable(name='weight', shape=(x_dim, y_dim), dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.01))
+        b = tf.get_variable(name='bias', shape=(y_dim,), dtype=tf.float32, initializer=tf.initializers.zeros())
+        y = tf.add(tf.matmul(x, w), b)
+
+    return y
+    
+
+class TensorFlowModelTemplate:
+    def __init__(self, config):
+        self.config = config
+        self.init_global_step()
+        self.init_cur_epoch()
+
+    def save(self, sess):
+        print("Saving model...")
+        self.saver.save(sess, self.config.checkpoint_dir, self.global_step_tensor)
+        print("Model saved")        
+
+    def load(self, sess):
+        latest_checkpoint = tf.train.latest_checkpoint(self.config.checkpoint_dir)
+        if latest_checkpoint:
+            print("Loading model checkpoint {} ...\n".format(latest_checkpoint))
+            self.saver.restor(sess, latest_checkpoint)
+            print("Model loaded")
+
+    def init_cur_epoch(self):
+        with tf.variable_scope('cur_epoch'):
+            self.cur_epoch_tensor = tf.get_variable(0, trainable=False, name='cur_epoch')
+            self.increment_cur_epoch_tensor = tf.assign(self.cur_epoch_tensor, self.cur_epoch_tensor+1)
+            
+    def init_global_step(self):
+        with tf.variable_scope('global_step'):
+            self.global_step_tensor = tf.get_variable(0, trainable=False, name='global_step')
+
+    def init_saver(self):
+        raise NotImplementedError
+
+    def build_model(self):
+        raise NotImplementedError
+
+class LinearModel(TensorFlowModelTemplate):
+    def __init__(self, config):
+        super(LinearModel, self).__init__(config)
+        self.build_model()
+        self.init_saver()
+
+    def init_saver(self):
+        self.saver = tr.train.Saver(max_to_keep=self.config.max_to_keep)
+
+    def build_model(self):
+        raise NotImplementedError
+        
 def runModel(args):
     x_train, y_train, x_valid, y_valid = load_data()
 
@@ -57,11 +111,15 @@ def runModel(args):
     X = tf.placeholder(tf.float32, shape=(None, img_size_flat), name='X')
     Y = tf.placeholder(tf.float32, shape=(None, n_classes), name='Y')
 
-    w = tf.get_variable(name='w', shape=(img_size_flat, n_classes), dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.01))
-    b = tf.get_variable(name='b', shape=(n_classes,), dtype=tf.float32, initializer=tf.initializers.zeros())
-    X_w = tf.matmul(X, w, name='X_w')
-    y_logits = tf.add(X_w, b, name='y')
+#    w = tf.get_variable(name='w', shape=(img_size_flat, n_classes), dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.01))
+#    b = tf.get_variable(name='b', shape=(n_classes,), dtype=tf.float32, initializer=tf.initializers.zeros())
+#    X_w = tf.matmul(X, w, name='X_w')
+#    y_logits = tf.add(X_w, b, name='y')
 
+    d1 = tf.layers.dense(X, 512, activation=tf.nn.relu, name='d1', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+    y_logits = tf.layers.dense(d1, n_classes, name='d2', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+    
     learning_rate = 0.001
     epochs = 1000
     batch_size = 100
