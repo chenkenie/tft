@@ -52,49 +52,62 @@ def Dense(x, x_dim, y_dim, name, reuse=None):
     
 
 class TensorFlowModelTemplate:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
         self.init_global_step()
         self.init_cur_epoch()
 
-    def save(self, sess):
-        print("Saving model...")
-        self.saver.save(sess, self.config.checkpoint_dir, self.global_step_tensor)
-        print("Model saved")        
-
-    def load(self, sess):
-        latest_checkpoint = tf.train.latest_checkpoint(self.config.checkpoint_dir)
-        if latest_checkpoint:
-            print("Loading model checkpoint {} ...\n".format(latest_checkpoint))
-            self.saver.restor(sess, latest_checkpoint)
-            print("Model loaded")
+#    def save(self, sess):
+#        print("Saving model...")
+#        self.saver.save(sess, self.config.checkpoint_dir, self.global_step_tensor)
+#        print("Model saved")        
+#
+#    def load(self, sess):
+#        latest_checkpoint = tf.train.latest_checkpoint(self.config.checkpoint_dir)
+#        if latest_checkpoint:
+#            print("Loading model checkpoint {} ...\n".format(latest_checkpoint))
+#            self.saver.restor(sess, latest_checkpoint)
+#            print("Model loaded")
 
     def init_cur_epoch(self):
         with tf.variable_scope('cur_epoch'):
-            self.cur_epoch_tensor = tf.get_variable(0, trainable=False, name='cur_epoch')
+            self.cur_epoch_tensor = tf.get_variable(initializer=tf.constant(0), trainable=False, name='cur_epoch')
             self.increment_cur_epoch_tensor = tf.assign(self.cur_epoch_tensor, self.cur_epoch_tensor+1)
             
     def init_global_step(self):
         with tf.variable_scope('global_step'):
-            self.global_step_tensor = tf.get_variable(0, trainable=False, name='global_step')
+            self.global_step_tensor = tf.get_variable(initializer=tf.constant(0), trainable=False, name='global_step')
 
-    def init_saver(self):
-        raise NotImplementedError
+#    def init_saver(self):
+#        raise NotImplementedError
 
     def build_model(self):
         raise NotImplementedError
 
 class LinearModel(TensorFlowModelTemplate):
-    def __init__(self, config):
-        super(LinearModel, self).__init__(config)
+    def __init__(self):
+        super(LinearModel, self).__init__()
         self.build_model()
-        self.init_saver()
+#        self.init_saver()
 
-    def init_saver(self):
-        self.saver = tr.train.Saver(max_to_keep=self.config.max_to_keep)
+#    def init_saver(self):
+#        self.saver = tr.train.Saver(max_to_keep=self.config.max_to_keep)
 
     def build_model(self):
-        raise NotImplementedError
+        # Input
+        self.X = tf.placeholder(tf.float32, shape=(None, img_size_flat), name='X')
+        self.Y = tf.placeholder(tf.float32, shape=(None, n_classes), name='Y')
+
+        d1 = tf.layers.dense(self.X, 512, activation=tf.nn.relu, name='d1', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+        y_logits = tf.layers.dense(d1, n_classes, name='d2', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+        learning_rate = 0.001
+    
+        # loss function, optimizer and accuracy
+        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.Y, logits=y_logits), name='loss')
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(self.loss)
+        correct_prediction = tf.equal(tf.argmax(y_logits, 1), tf.argmax(self.Y, 1), name='correct_pred')
+        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
+        
         
 def runModel(args):
     x_train, y_train, x_valid, y_valid = load_data()
@@ -106,35 +119,41 @@ def runModel(args):
     print("- Training-set:\t\t{}, {}".format(x_train.shape, y_train.shape))
     print("- Validation-set:\t{}, {}".format(x_valid.shape, y_valid.shape))    
 
-    #define model
-    # Input
-    X = tf.placeholder(tf.float32, shape=(None, img_size_flat), name='X')
-    Y = tf.placeholder(tf.float32, shape=(None, n_classes), name='Y')
+#    #define model
+#    # Input
+#    X = tf.placeholder(tf.float32, shape=(None, img_size_flat), name='X')
+#    Y = tf.placeholder(tf.float32, shape=(None, n_classes), name='Y')
+#
+##    w = tf.get_variable(name='w', shape=(img_size_flat, n_classes), dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.01))
+##    b = tf.get_variable(name='b', shape=(n_classes,), dtype=tf.float32, initializer=tf.initializers.zeros())
+##    X_w = tf.matmul(X, w, name='X_w')
+##    y_logits = tf.add(X_w, b, name='y')
+#
+#    d1 = tf.layers.dense(X, 512, activation=tf.nn.relu, name='d1', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+#    y_logits = tf.layers.dense(d1, n_classes, name='d2', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+#
+#    
+#    learning_rate = 0.001
+#    epochs = 1000
+#    batch_size = 100
+#    display_freq = 100
+#    
+#    # loss function, optimizer and accuracy
+#    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=y_logits), name='loss')
+#    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(loss)
+#    correct_prediction = tf.equal(tf.argmax(y_logits, 1), tf.argmax(Y, 1), name='correct_pred')
+#    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
 
-#    w = tf.get_variable(name='w', shape=(img_size_flat, n_classes), dtype=tf.float32, initializer=tf.truncated_normal_initializer(stddev=0.01))
-#    b = tf.get_variable(name='b', shape=(n_classes,), dtype=tf.float32, initializer=tf.initializers.zeros())
-#    X_w = tf.matmul(X, w, name='X_w')
-#    y_logits = tf.add(X_w, b, name='y')
-
-    d1 = tf.layers.dense(X, 512, activation=tf.nn.relu, name='d1', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-    y_logits = tf.layers.dense(d1, n_classes, name='d2', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
-
+    model = LinearModel()
     
-    learning_rate = 0.001
+    # intialize all variables
+    init = tf.global_variables_initializer()
+    
     epochs = 1000
     batch_size = 100
     display_freq = 100
     
-    # loss function, optimizer and accuracy
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=y_logits), name='loss')
-    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(loss)
-    correct_prediction = tf.equal(tf.argmax(y_logits, 1), tf.argmax(Y, 1), name='correct_pred')
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
-
-    # intialize all variables
-    init = tf.global_variables_initializer()
-    
-    #train
+     #train
     num_tr_iter = int(len(y_train) / batch_size)
     with tf.Session() as sess:
         sess.run(init)
@@ -146,15 +165,15 @@ def runModel(args):
                 end = start + batch_size
                 x_batch, y_batch = get_next_batch(x_train, y_train, start, end)
                 
-                feed_dict_batch = {X: x_batch, Y: y_batch} 
-                sess.run(optimizer, feed_dict=feed_dict_batch)
+                feed_dict_batch = {model.X: x_batch, model.Y: y_batch} 
+                sess.run(model.optimizer, feed_dict=feed_dict_batch)
 
                 if iteration % display_freq == 0:
-                    loss_batch, acc_batch = sess.run([loss, accuracy], feed_dict=feed_dict_batch)
+                    loss_batch, acc_batch = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_batch)
                     print("Iter {0:3d}:\t Loss={1:.2f}, \tTraining Accuracy={2:.01%}".format(iteration, loss_batch, acc_batch))
 
-            feed_dict_valid = {X: x_valid, Y: y_valid} 
-            loss_batch, acc_batch = sess.run([loss, accuracy], feed_dict=feed_dict_valid)
+            feed_dict_valid = {model.X: x_valid, model.Y: y_valid} 
+            loss_batch, acc_batch = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_valid)
             print("epoch {0:3d}:\t validation Loss={1:.2f}, \tvalidation Accuracy={2:.01%}".format(epoch, loss_batch, acc_batch))
                   
 if __name__ == '__main__':
