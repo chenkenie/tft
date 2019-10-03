@@ -31,10 +31,7 @@ class LinearModel(TensorFlowModelTemplate):
     def __init__(self):
         super(LinearModel, self).__init__()
         self.build_model()
-#        self.init_saver()
 
-#    def init_saver(self):
-#        self.saver = tr.train.Saver(max_to_keep=self.config.max_to_keep)
 
     def build_model(self):
         # Input
@@ -54,8 +51,8 @@ class LinearModel(TensorFlowModelTemplate):
 
         
 class SimpleTrainer(TensorFlowTrainerTemplate):
-    def __init__(self, sess, model, data, batch_size):
-        super(SimpleTrainer, self).__init__(sess, model, data, batch_size)
+    def __init__(self, sess, model, data, batch_size, save_dir):
+        super(SimpleTrainer, self).__init__(sess, model, data, batch_size, save_dir)
         
     
         
@@ -65,7 +62,9 @@ def runModel(args):
         data = DataMNIST()
         model = LinearModel()
         batch_size = 200
-        trainer = SimpleTrainer(sess, model, data, batch_size)
+
+        model.load_weights(sess, 'model_prev')
+        trainer = SimpleTrainer(sess, model, data, batch_size, 'model_1/')
 
         trainer.train(200)
         

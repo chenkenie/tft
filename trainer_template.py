@@ -4,11 +4,12 @@ from tqdm import tqdm, trange
 
 
 class TensorFlowTrainerTemplate:
-    def __init__(self, sess, model, data, batch_size):
+    def __init__(self, sess, model, data, batch_size, save_dir):
         self.model = model
         self.sess = sess
         self.data = data
         self.batch_size = batch_size
+        self.save_dir = save_dir
         
         self.init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
         self.sess.run(self.init)
@@ -44,7 +45,9 @@ class TensorFlowTrainerTemplate:
 
                 losses.append(loss_batch)
                 accs.append(acc_batch)
-            
+
+        model.save_weights(sess, self.save_dir, epoch)
+        
         return np.mean(losses), np.mean(accs)
 
     def train_step(self):
