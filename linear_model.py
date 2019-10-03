@@ -30,8 +30,6 @@ class DataMNIST(TensorFlowDataLoaderTemplate):
 class LinearModel(TensorFlowModelTemplate):
     def __init__(self):
         super(LinearModel, self).__init__()
-        self.build_model()
-
 
     def build_model(self):
         # Input
@@ -63,8 +61,9 @@ def runModel(args):
         model = LinearModel()
         batch_size = 200
 
-        model.load_weights(sess, 'model_prev')
-        trainer = SimpleTrainer(sess, model, data, batch_size, 'model_1/')
+        model.build_model()
+        #model.load_weights(sess, 'model_prev')
+        trainer = SimpleTrainer(sess, model, data, batch_size, 'model_2/test')
 
         trainer.train(200)
         
