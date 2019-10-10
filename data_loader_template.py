@@ -54,7 +54,7 @@ class DataMNISTAE(TensorFlowDataLoaderTemplate):
         from tensorflow.keras.datasets import mnist
         img_h = img_w = 28
         img_size_flat = img_h * img_w
-        noise_level = 0.5
+        noise_level = 0.9
         
         (input_train, target_train), (input_test, target_test) = mnist.load_data()
 

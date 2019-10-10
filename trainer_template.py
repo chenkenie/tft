@@ -10,21 +10,24 @@ class TensorFlowTrainerTemplate:
         self.data = data
         self.batch_size = batch_size
         self.save_dir = save_dir
+
         self.best_loss = 1e32
         self.best_acc = 0.0
         self.best_valid_loss = 1e32
         self.best_valid_acc = 0.0
+
         self.init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
         self.sess.run(self.init)
 
     def train(self, epochs):
+        # Saver have to initialted after model is built, otherwise variables are not correctly saved
+        saver = tf.train.Saver(max_to_keep=10)
+
         for epoch in range(epochs):
             data = self.data
             model = self.model
             sess = self.sess
 
-            model.init_saver()
-            
             data.epoch_init()
             epoch_loss, epoch_acc = self.train_epoch(epoch)
             
@@ -52,7 +55,7 @@ class TensorFlowTrainerTemplate:
                 isSaveWeight = True
 
             if isSaveWeight:
-                model.save(sess, self.save_dir, epoch)
+                saver.save(sess, self.save_dir, global_step=epoch, write_meta_graph=True)
                 print(msg+", model saved.")
             else:
                 print(msg+", Loss or Accuracy was not improve.") 
