@@ -23,10 +23,12 @@ class TensorFlowTrainerTemplate:
             model = self.model
             sess = self.sess
 
+            model.init_saver()
+            
             data.epoch_init()
             epoch_loss, epoch_acc = self.train_epoch(epoch)
             
-            feed_dict_valid = {model.X: data.x_valid, model.Y: data.y_valid} 
+            feed_dict_valid = {model.Input: data.input_valid, model.Target: data.target_valid} 
             valid_loss, valid_acc = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_valid)
 
             msg = "Epoch {0:3d}:Training Loss={1:.2f}, Training Accuracy={2:.01%}, Validation Loss={3:.2f}, Validation Accuracy={4:.01%}".format(epoch, epoch_loss, epoch_acc, valid_loss, valid_acc)
@@ -50,7 +52,7 @@ class TensorFlowTrainerTemplate:
                 isSaveWeight = True
 
             if isSaveWeight:
-                model.save_weights(sess, self.save_dir, epoch)
+                model.save(sess, self.save_dir, epoch)
                 print(msg+", model saved.")
             else:
                 print(msg+", Loss or Accuracy was not improve.") 
@@ -64,7 +66,7 @@ class TensorFlowTrainerTemplate:
         losses = []
         accs = []
 
-        batchCnt = int(len(data.y_train) / self.batch_size)
+        batchCnt = int(len(data.target_train) / self.batch_size)
         
         with trange(batchCnt, ncols=100, ascii=True) as t:
             t.set_description("Epoch {:3d}".format(epoch))
@@ -85,11 +87,16 @@ class TensorFlowTrainerTemplate:
         model = self.model
         sess = self.sess
         
-        x_batch, y_batch = data.next_batch(self.batch_size)
-
-        feed_dict_batch = {model.X: x_batch, model.Y: y_batch} 
+        input_batch, target_batch = data.next_batch(self.batch_size)
+        
+        feed_dict_batch = {model.Input: input_batch, model.Target: target_batch} 
         sess.run(model.optimizer, feed_dict=feed_dict_batch)
         loss_batch, acc_batch = sess.run([model.loss, model.accuracy], feed_dict=feed_dict_batch)
 
         return loss_batch, acc_batch
 
+
+class SimpleTrainer(TensorFlowTrainerTemplate):
+    def __init__(self, sess, model, data, batch_size, save_dir):
+         super(SimpleTrainer, self).__init__(sess, model, data, batch_size, save_dir)
+    

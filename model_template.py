@@ -1,20 +1,26 @@
 import tensorflow as tf
+import os
 
 class TensorFlowModelTemplate:
     def __init__(self):
         self.init_global_step()
         self.init_cur_epoch()
-        self.init_saver()
+        #self.init_saver()
 
-    def save_weights(self, sess, checkpoint_dir, epoch):
-        self.saver.save(sess, checkpoint_dir, global_step=epoch, write_meta_graph=False)
+    def save(self, sess, checkpoint_dir, epoch):
+        self.saver.save(sess, checkpoint_dir, global_step=epoch, write_meta_graph=True)
 
-    def load_weights(self, sess, checkpoint_dir):
-        latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
+    def load(self, sess, checkpoint_dir):
+        path = os.path.normpath(checkpoint_dir)
+        latest_checkpoint = tf.train.latest_checkpoint(path)
+        
         if latest_checkpoint:
             print("Loading model checkpoint {} ...\n".format(latest_checkpoint))
+            self.saver = tf.train.import_meta_graph(latest_checkpoint+'.meta')
             self.saver.restore(sess, latest_checkpoint)
             print("Model loaded")
+        else:
+            raise NameError("Loade model weight failed!")
 
     def init_cur_epoch(self):
         with tf.variable_scope('cur_epoch'):
@@ -30,3 +36,6 @@ class TensorFlowModelTemplate:
 
     def build_model(self):
         raise NotImplementedError
+
+    def predict(self, sess, data):
+        raise NotImplementedError        

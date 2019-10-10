@@ -21,7 +21,8 @@ class LinearModel(TensorFlowModelTemplate):
         self.X = tf.placeholder(tf.float32, shape=(None, img_size_flat), name='X')
         self.Y = tf.placeholder(tf.float32, shape=(None, n_classes), name='Y')
 
-        y_logits = tf.layers.dense(self.X, n_classes, name='d2', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+        d1 = tf.layers.dense(self.X, 200, activation=tf.nn.relu, name='d1', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+        y_logits = tf.layers.dense(d1, n_classes, name='d2', kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
 
         learning_rate = 0.001
     
@@ -41,7 +42,7 @@ def runModel(args):
 
         model.build_model()
         #model.load_weights(sess, 'model_prev')
-        trainer = SimpleTrainer(sess, model, data, batch_size, 'model/linear')
+        trainer = SimpleTrainer(sess, model, data, batch_size, 'models/nn')
 
         trainer.train(200)
         
