@@ -34,11 +34,12 @@ class TensorFlowDataLoaderTemplate:
 
 
 class DataMNIST(TensorFlowDataLoaderTemplate):
-    def __init__(self):
+    def __init__(self, flatten=True):
         from tensorflow.keras.datasets import mnist
         img_h = img_w = 28
         img_size_flat = img_h * img_w
-        
+        n_channels = 1
+
         (input_train, target_train), (input_test, target_test) = mnist.load_data()
 
         self.input_train = input_train
@@ -46,8 +47,13 @@ class DataMNIST(TensorFlowDataLoaderTemplate):
         self.input_valid = input_test
         self.target_valid = to_categorical(target_test)
 
-        self.input_train = self.input_train.reshape((-1, img_size_flat))
-        self.input_valid = self.input_valid.reshape((-1, img_size_flat))
+        if flatten:
+            self.input_train = self.input_train.reshape((-1, img_size_flat))
+            self.input_valid = self.input_valid.reshape((-1, img_size_flat))
+        else:
+            self.input_train = self.input_train.reshape((-1, img_h, img_w, n_channels))
+            self.input_valid = self.input_valid.reshape((-1, img_h, img_w, n_channels))
+            
 
 class DataMNISTAE(TensorFlowDataLoaderTemplate):
     def __init__(self):
