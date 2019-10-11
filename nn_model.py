@@ -72,7 +72,7 @@ def validateModel(args):
                   
 if __name__ == '__main__':
     # Arguments to be parsed via command line
-    parser=argparse.ArgumentParser(description="Run Linear Model")
+    parser=argparse.ArgumentParser(description="Run NN Model")
     parser.add_argument("--verbose", "-v", help="verbose output, use -vv and -vvv for more debug information", action="count", default=0)
     subparsers = parser.add_subparsers(help='sub-command help')
 
