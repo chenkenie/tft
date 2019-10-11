@@ -40,3 +40,34 @@ class TensorFlowModelTemplate:
 
     def predict(self, sess, data):
         raise NotImplementedError        
+
+
+
+class TensorFlowClassificationModel(TensorFlowModelTemplate):
+    def __init__(self):
+        super(TensorFlowClassificationModel, self).__init__()
+
+    def set_loss(self, y_logits):
+
+        #require the graph and y_logits to be defined first
+        
+        learning_rate = 0.001
+    
+        # loss function, optimizer and accuracy
+        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=self.Target, logits=y_logits), name='loss')
+        self.optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate, name='Adam-op').minimize(self.loss)
+        correct_prediction = tf.equal(tf.argmax(y_logits, 1), tf.argmax(self.Target, 1), name='correct_pred')
+        self.accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accuracy')
+
+    def predict(self, sess, data):
+        
+        graph = tf.get_default_graph()
+        self.Input = graph.get_tensor_by_name("INPUT:0")
+        self.Target = graph.get_tensor_by_name("TARGET:0")        
+        self.loss = graph.get_tensor_by_name("loss:0")        
+        self.accuracy = graph.get_tensor_by_name("accuracy:0")        
+        feed_dict_valid = {self.Input: data.input_valid, self.Target: data.target_valid} 
+        valid_loss, valid_acc = sess.run([self.loss, self.accuracy], feed_dict=feed_dict_valid)
+
+        msg = "Validation Points {}, Loss={:.2f}, Accuracy={:.01%}".format(data.input_valid.shape[0], valid_loss, valid_acc)
+        print(msg)
